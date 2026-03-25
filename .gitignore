@@ -1,2 +1,27 @@
-# 项目排除路径
-/.venv_rtmpose/
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDE
+.idea/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+.venv_rtmpose/
+
+# Project outputs
+output/
+outputs/
+**/output/
+**/outputs/
+
+# Runtime caches
+6_技术评价与反馈/deployable_models/.tabpfn_cache/
+
+# Optional local artifacts
+*.log
