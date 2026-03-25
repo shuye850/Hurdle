@@ -1,0 +1,30 @@
+smoothing:
+  window_size: 5
+
+detection:
+  knee_angle_smooth_window: 5
+  knee_peak_window: 3
+  knee_peak_prominence_deg: 2.0
+
+  ankle_low_ratio: 0.20
+  low_segment_min_len: 3
+
+  post_bar_margin_px: 10.0
+  swing_low_acc_quantile: 0.18
+  swing_min_segment_len: 3
+
+  min_phase_gap_frames: 2
+  fallback_pre_frames: 18
+  fallback_post_frames: 12
+
+paths:
+  module1_video_dir: ../1_视频预处理/output
+  module2_csv_dir: ../2_栏架识别/outputs/csv
+  module3_csv_dir: ../3_人体关键点_RTMPOSE/output/csv
+  output_dir: ../4_阶段划分/output
+
+render:
+  draw_pose: true
+  draw_hurdle: true
+  draw_phase_text: true
+  draw_event_lines: true

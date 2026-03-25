@@ -1,0 +1,52 @@
+paths:
+  default_input_dir: "../1_视频预处理/clips_one_hurdle"
+  model_path: "../3_人体关键点/models/pose_landmarker_heavy.task"
+
+video:
+  max_long_edge: 0
+  allowed_exts: [".mp4", ".mov", ".m4v", ".avi", ".mkv", ".wmv", ".flv", ".webm"]
+
+mediapipe_tasks:
+  num_poses: 1
+  min_pose_detection_confidence: 0.5
+  min_pose_presence_confidence: 0.5
+  min_tracking_confidence: 0.5
+
+preprocess:
+  enabled: false
+  clahe_clip_limit: 2.0
+  clahe_grid_size: 8
+  gamma: 1.0
+
+roi:
+  enabled: true
+  refresh_interval: 10
+  conf_threshold: 0.55
+  padding_ratio: 0.15
+  min_valid_points: 8
+  min_box_size: 128
+  min_quality: 0.35
+  smoothing_momentum: 0.65
+  target_aspect_ratio: 0.75
+
+postprocess:
+  enabled: true
+  conf_threshold: 0.60
+  max_interp_gap: 4
+  savgol_window: 9
+  savgol_polyorder: 2
+  enable_support_foot_constraint: true
+
+overlay:
+  enabled: true
+  write_raw: true
+  write_smooth: true
+  draw_conf_threshold: 0.60
+  draw_frame_index: true
+  draw_quality: true
+  draw_infer_mode: true
+
+exports:
+  write_raw_csv: true
+  write_clean_csv: true
+  write_meta_json: true

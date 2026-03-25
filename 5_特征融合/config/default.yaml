@@ -1,0 +1,93 @@
+project_name: "模块五_特征融合与指标计算"
+
+paths:
+  upstream:
+    preprocess_output: "../1_视频预处理/output"
+    hurdle_output: "../2_栏架识别/outputs/csv"
+    pose_output: "../3_人体关键点_RTMPOSE/output/csv"
+
+    # 模块四
+    stage_csv_output: "../4_阶段划分/output/csv"
+    stage_json_output: "../4_阶段划分/output/json"
+
+  current_output_root: "./output"
+
+file_match:
+  hurdle_csv_suffix: ".csv"
+  pose_csv_suffix: "_keypoints.csv"
+  segmented_csv_suffix: "_segmented_coordinates.csv"
+  events_json_suffix: "_events.json"
+  phase_json_suffix: "_phase_segments.json"
+  video_extensions: [".mp4", ".mov", ".avi", ".mkv"]
+
+columns:
+  hurdle:
+    frame: "frame_idx"
+    time_sec: "time_sec"
+    box_x1: "bbox_x1"
+    box_y1: "bbox_y1"
+    box_x2: "bbox_x2"
+    box_y2: "bbox_y2"
+    barmid_x: "bar_mid_x"
+    barmid_y: "bar_mid_y"
+    post_x: "post_x"
+    conf: "conf"
+
+  pose:
+    frame: "frame_id"
+    time_sec: "timestamp_sec"
+    fps: "fps"
+    width: "width"
+    height: "height"
+
+stage_names:
+  takeoff: "起跨"
+  flight: "腾空"
+  landing: "下栏"
+
+events:
+  takeoff_landing_frame: "takeoff_touchdown"
+  takeoff_toeoff_frame: "takeoff_toeoff"
+  landing_frame: "swing_touchdown"
+  recovery_toeoff_frame: "swing_toeoff"
+
+hurdle_height:
+  method: "box_ratio_threshold"
+  ratio_thresholds:
+    - {min: 1.00, max: 1.16, height_m: 0.762}
+    - {min: 1.16, max: 1.25, height_m: 0.838}
+    - {min: 1.25, max: 1.36, height_m: 0.914}
+    - {min: 1.36, max: 1.47, height_m: 0.991}
+    - {min: 1.47, max: 1.70, height_m: 1.067}
+
+mask_detection:
+  enabled: false
+  fallback_box_height_ratio: 0.12
+
+com:
+  confidence_threshold: 0.5
+  upper_weight: 0.60
+  thighs_weight: 0.28
+  lower_weight: 0.12
+  upper_anchor_shoulder_weight: 0.45
+  upper_anchor_hip_weight: 0.55
+  thigh_com_ratio: 0.41
+  shank_com_ratio: 0.44
+
+velocity:
+  pre_takeoff_window: 2
+  toeoff_window: 1
+  landing_window: 1
+
+video:
+  draw_box: true
+  draw_barmid: true
+  draw_post: true
+  draw_pose: true
+  draw_com: true
+  draw_stage: true
+  draw_events: true
+  draw_metrics: true
+
+visualization:
+  dpi: 96

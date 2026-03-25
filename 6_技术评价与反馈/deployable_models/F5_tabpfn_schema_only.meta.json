@@ -1,0 +1,28 @@
+{
+  "task_id": "F5",
+  "task_name": "过栏摆动腿技术",
+  "stage": "flight",
+  "model_name": "tabpfn",
+  "feature_mode": "schema_only",
+  "feature_names": [
+    "bar_cross_lead_knee_angle_deg"
+  ],
+  "target_col": "F5",
+  "score_clip_min": 1.0,
+  "score_clip_max": 5.0,
+  "preprocess": {
+    "mode": "scale",
+    "medians": [
+      155.91456783787515
+    ],
+    "mean": [
+      156.23638444045312
+    ],
+    "std": [
+      9.46435462701636
+    ]
+  },
+  "n_samples": 34,
+  "artifact_format": "tabpfn_fit",
+  "model_path": "D:\\HURDLE\\analysis\\deployable_models\\F5_tabpfn_schema_only.tabpfn_fit"
+}
