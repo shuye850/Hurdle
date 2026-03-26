@@ -1,5 +1,5 @@
 {
-  "task_id": "T5",
+  "task_id": "T4",
   "task_name": "起跨角与着地角合理性",
   "stage": "takeoff",
   "model_name": "tabpfn",
@@ -8,7 +8,7 @@
     "takeoff_angle_deg",
     "takeoff_landing_angle_deg"
   ],
-  "target_col": "T5",
+  "target_col": "T4",
   "score_clip_min": 1.0,
   "score_clip_max": 5.0,
   "preprocess": {

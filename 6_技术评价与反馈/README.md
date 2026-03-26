@@ -13,7 +13,7 @@
 
 默认输入：
 
-- `../5_特征融合/output/csv/summary/technical_metrics_all.csv`
+- `../5_特征融合/output/csv/technical/*_technical_metrics.csv`
 
 默认输出：
 
@@ -26,11 +26,11 @@
 运行方式：
 
 ```bash
-python3 run.py
+python3 src/run.py
 ```
 
 只跑单个样本：
 
 ```bash
-python3 run.py --video-id 001
+python3 src/run.py --video-id 001
 ```

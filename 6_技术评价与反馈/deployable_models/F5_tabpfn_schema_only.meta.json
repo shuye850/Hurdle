@@ -1,5 +1,5 @@
 {
-  "task_id": "F5",
+  "task_id": "F4",
   "task_name": "过栏摆动腿技术",
   "stage": "flight",
   "model_name": "tabpfn",
@@ -7,7 +7,7 @@
   "feature_names": [
     "bar_cross_lead_knee_angle_deg"
   ],
-  "target_col": "F5",
+  "target_col": "F4",
   "score_clip_min": 1.0,
   "score_clip_max": 5.0,
   "preprocess": {

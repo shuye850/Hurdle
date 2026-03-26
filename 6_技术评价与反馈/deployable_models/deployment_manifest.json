@@ -1,7 +1,7 @@
 [
   {
-    "task_id": "takeoff_mean",
-    "task_name": "takeoff_stage_score",
+    "task_id": "A1",
+    "task_name": "起跨阶段平均分",
     "stage": "takeoff",
     "tier": "core",
     "model_name": "tabpfn",
@@ -13,8 +13,8 @@
     "enabled": true
   },
   {
-    "task_id": "flight_mean",
-    "task_name": "flight_stage_score",
+    "task_id": "A2",
+    "task_name": "腾空阶段平均分",
     "stage": "flight",
     "tier": "core",
     "model_name": "tabpfn",
@@ -26,8 +26,8 @@
     "enabled": true
   },
   {
-    "task_id": "landing_mean",
-    "task_name": "landing_stage_score",
+    "task_id": "A3",
+    "task_name": "下栏阶段平均分",
     "stage": "landing",
     "tier": "core",
     "model_name": "random_forest",
@@ -39,8 +39,8 @@
     "enabled": true
   },
   {
-    "task_id": "overall_mean",
-    "task_name": "overall_score",
+    "task_id": "A4",
+    "task_name": "总分",
     "stage": "overall",
     "tier": "core",
     "model_name": "tabpfn",
@@ -65,7 +65,7 @@
     "enabled": true
   },
   {
-    "task_id": "T5",
+    "task_id": "T4",
     "task_name": "起跨角与着地角合理性",
     "stage": "takeoff",
     "tier": "core",
@@ -78,7 +78,7 @@
     "enabled": true
   },
   {
-    "task_id": "T6",
+    "task_id": "T5",
     "task_name": "起跨上体姿态",
     "stage": "takeoff",
     "tier": "core",
@@ -91,7 +91,7 @@
     "enabled": true
   },
   {
-    "task_id": "F5",
+    "task_id": "F4",
     "task_name": "过栏摆动腿技术",
     "stage": "flight",
     "tier": "core",
@@ -104,7 +104,7 @@
     "enabled": true
   },
   {
-    "task_id": "F6",
+    "task_id": "F5",
     "task_name": "过栏上体姿态",
     "stage": "flight",
     "tier": "core",
@@ -117,7 +117,7 @@
     "enabled": true
   },
   {
-    "task_id": "L3",
+    "task_id": "L2",
     "task_name": "下栏着地动作质量",
     "stage": "landing",
     "tier": "core",
@@ -130,7 +130,7 @@
     "enabled": true
   },
   {
-    "task_id": "L5",
+    "task_id": "L3",
     "task_name": "下栏蹬伸质量",
     "stage": "landing",
     "tier": "core",
@@ -221,7 +221,7 @@
     "enabled": true
   },
   {
-    "task_id": "L6",
+    "task_id": "L4",
     "task_name": "下栏上体控制",
     "stage": "landing",
     "tier": "support",

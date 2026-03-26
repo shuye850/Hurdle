@@ -1,5 +1,5 @@
 {
-  "task_id": "flight_mean",
+  "task_id": "A2",
   "task_name": "flight_stage_score",
   "stage": "flight",
   "model_name": "tabpfn",
@@ -104,7 +104,7 @@
     "com_vx_landing_mps",
     "com_vy_landing_mps"
   ],
-  "target_col": "flight_mean",
+  "target_col": "A2",
   "score_clip_min": 1.0,
   "score_clip_max": 5.0,
   "preprocess": {

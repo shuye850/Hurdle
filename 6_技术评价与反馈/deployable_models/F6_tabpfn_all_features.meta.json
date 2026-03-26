@@ -1,5 +1,5 @@
 {
-  "task_id": "F6",
+  "task_id": "F5",
   "task_name": "过栏上体姿态",
   "stage": "flight",
   "model_name": "tabpfn",
@@ -104,7 +104,7 @@
     "com_vx_landing_mps",
     "com_vy_landing_mps"
   ],
-  "target_col": "F6",
+  "target_col": "F5",
   "score_clip_min": 1.0,
   "score_clip_max": 5.0,
   "preprocess": {
