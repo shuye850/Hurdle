@@ -51,7 +51,7 @@ def render_html_report(payload: dict[str, Any], chart_path: Path, output_path: P
   <meta charset="utf-8">
   <title>{escape(payload['sample_name'])} 技术评分报告</title>
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; margin: 32px; color: #1f2937; background: #f7f9fc; }}
+    body {{ font-family: "Times New Roman", Times, "Songti SC", "Hiragino Mincho ProN", serif; margin: 32px; color: #1f2937; background: #f7f9fc; }}
     h1, h2 {{ margin: 0 0 10px; }}
     .hero, .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 18px; padding: 22px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05); }}
     .hero {{ margin-bottom: 22px; }}

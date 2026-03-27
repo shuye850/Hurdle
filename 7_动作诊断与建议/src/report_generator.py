@@ -168,6 +168,23 @@ PERCENT_KEYS = {
     "landing_phase_ratio",
 }
 
+LEG_LENGTH_KEYS = {
+    "leg_length_px",
+    "leg_length_m",
+    "left_leg_length_px",
+    "left_leg_length_m",
+    "right_leg_length_px",
+    "right_leg_length_m",
+    "leading_leg_length_px",
+    "leading_leg_length_m",
+    "trail_leg_length_px",
+    "trail_leg_length_m",
+    "bar_cross_leading_leg_length_px",
+    "bar_cross_leading_leg_length_m",
+    "bar_cross_trail_leg_length_px",
+    "bar_cross_trail_leg_length_m",
+}
+
 
 def _embed_file(target_path: str | Path | None, default_mime: str) -> str:
     if not target_path:
@@ -238,11 +255,18 @@ def _display_metric_value(key: str, value: object) -> str:
     return text
 
 
-def _render_image_card(title: str, src: str) -> str:
+def _is_visible_metric_key(key: str) -> bool:
+    return key not in LEG_LENGTH_KEYS
+
+
+def _render_image_card(title: str, src: str, card_class: str = "") -> str:
     if not src:
         return ""
+    class_attr = "media-card"
+    if card_class:
+        class_attr = f"{class_attr} {card_class}"
     return f"""
-    <div class="media-card">
+    <div class="{class_attr}">
       <div class="media-title">{escape(title)}</div>
       <img src="{src}" alt="{escape(title)}">
     </div>
@@ -271,7 +295,7 @@ def _collect_group_rows(
 ) -> tuple[str, list[tuple[str, str]]] | None:
     rows: list[tuple[str, str]] = []
     for key, value in metrics.items():
-        if key in used or key in IGNORE_KEYS or value is None:
+        if key in used or key in IGNORE_KEYS or value is None or not _is_visible_metric_key(key):
             continue
         if predicate(key):
             rows.append((_metric_label(key), _display_metric_value(key, value)))
@@ -309,16 +333,6 @@ def _metric_groups(metrics: dict[str, Any]) -> list[tuple[str, list[tuple[str, s
                 "hurdle_height_method",
                 "hurdle_height_confidence",
                 "pixel_to_meter_scale",
-                "leg_length_px",
-                "leg_length_m",
-                "left_leg_length_px",
-                "left_leg_length_m",
-                "right_leg_length_px",
-                "right_leg_length_m",
-                "leading_leg_length_px",
-                "leading_leg_length_m",
-                "trail_leg_length_px",
-                "trail_leg_length_m",
             },
         ),
         ("关键事件帧", lambda key: key in EVENT_KEYS),
@@ -360,7 +374,7 @@ def _metric_groups(metrics: dict[str, Any]) -> list[tuple[str, list[tuple[str, s
 
     extra_rows: list[tuple[str, str]] = []
     for key, value in metrics.items():
-        if key in used or key in IGNORE_KEYS or value is None:
+        if key in used or key in IGNORE_KEYS or value is None or not _is_visible_metric_key(key):
             continue
         extra_rows.append((_metric_label(key), _display_metric_value(key, value)))
     if extra_rows:
@@ -399,6 +413,38 @@ def _embed_html_document(target_path: str | Path | None) -> str:
     return escape(path.read_text(encoding="utf-8"), quote=True)
 
 
+def _normalize_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _source_class(current: Any, original: Any) -> str:
+    current_text = _normalize_text(current)
+    original_text = _normalize_text(original)
+    if not current_text:
+        return "text-rule"
+    if original_text and current_text != original_text:
+        return "text-llm"
+    return "text-rule"
+
+
+def _colored_text(current: Any, original: Any) -> str:
+    text = _normalize_text(current) or _normalize_text(original) or "暂无"
+    return f"<span class=\"{_source_class(current, original)}\">{escape(text)}</span>"
+
+
+def _colored_list(items: list[Any], original_items: list[Any] | None = None) -> str:
+    original_items = original_items or []
+    original_set = {_normalize_text(item) for item in original_items if _normalize_text(item)}
+    rows = []
+    for item in items:
+        text = _normalize_text(item)
+        if not text:
+            continue
+        css = "text-llm" if text not in original_set else "text-rule"
+        rows.append(f"<li><span class=\"{css}\">{escape(text)}</span></li>")
+    return "".join(rows) or "<li><span class=\"text-rule\">暂无</span></li>"
+
+
 def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -406,42 +452,55 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     overall_text = f"{float(overall['score']):.2f} / 5" if overall and overall.get("score") is not None else "暂无"
     weakest_stage = diagnosis.get("weakest_stage") or {}
 
+    rule_stage_map = {
+        str(item.get("stage", "")).strip(): item
+        for item in diagnosis.get("rule_based_stage_diagnosis", [])
+        if str(item.get("stage", "")).strip()
+    }
+
     stage_rows = []
     for item in diagnosis.get("stage_diagnosis", []):
         stage_label = item.get("task_name") or item.get("stage_name") or item.get("stage")
+        rule_item = rule_stage_map.get(str(item.get("stage", "")).strip(), {})
         stage_rows.append(
-            f"<tr><td>{escape(str(stage_label))}</td><td>{float(item['score']):.2f}</td><td>{escape(str(item['summary']))}</td></tr>"
+            f"<tr><td>{escape(str(stage_label))}</td><td>{float(item['score']):.2f}</td><td>{_colored_text(item.get('summary'), rule_item.get('summary'))}</td></tr>"
         )
     stage_table_rows = "".join(stage_rows) or "<tr><td colspan='3'>暂无</td></tr>"
 
+    rule_problem_map = {
+        str(item.get("task_id", "")).strip(): item
+        for item in diagnosis.get("rule_based_top_problems", [])
+        if str(item.get("task_id", "")).strip()
+    }
+
     problem_cards = []
     for idx, problem in enumerate(diagnosis.get("top_problems", []), start=1):
+        rule_problem = rule_problem_map.get(str(problem.get("task_id", "")).strip(), {})
         evidence_items = "".join(
             f"<li>{escape(str(line))}</li>" for line in problem.get("evidence", [])
-        ) or "<li>暂无直接指标证据。</li>"
-        drill_items = "".join(
-            f"<li>{escape(str(name))}</li>" for name in problem.get("recommended_drills", [])
-        ) or "<li>暂无</li>"
+        ) or "<li><span class=\"text-rule\">暂无直接指标证据。</span></li>"
+        drill_items = _colored_list(problem.get("recommended_drills", []), rule_problem.get("recommended_drills", []))
         problem_cards.append(
             f"""
             <section class="problem-card">
-              <h3>问题 {idx}：{escape(problem['problem_title'])}</h3>
+              <h3>问题 {idx}：{_colored_text(problem.get('problem_title'), rule_problem.get('problem_title'))}</h3>
               <p><strong>对应评分项：</strong>{escape(problem['task_id'])} {escape(problem['task_name'])}（{problem['score']:.2f} 分）</p>
-              <p><strong>动作诊断：</strong>{escape(problem['diagnosis'])}</p>
-              <p><strong>影响：</strong>{escape(problem['impact'])}</p>
+              <p><strong>动作诊断：</strong>{_colored_text(problem.get('diagnosis'), rule_problem.get('diagnosis'))}</p>
+              <p><strong>影响：</strong>{_colored_text(problem.get('impact'), rule_problem.get('impact'))}</p>
               <div><strong>证据：</strong></div>
               <ul>{evidence_items}</ul>
               <div><strong>推荐练习：</strong></div>
               <ul>{drill_items}</ul>
+              <p><strong>下次关注：</strong>{_colored_text(problem.get('next_focus'), rule_problem.get('next_focus'))}</p>
             </section>
             """
         )
     problem_section = "".join(problem_cards) or "<section class='problem-card'><p>当前没有明显低分问题，可继续保持现有训练节奏。</p></section>"
 
-    drill_list = "".join(f"<li>{escape(str(line))}</li>" for line in diagnosis.get("recommended_drills", [])) or "<li>暂无</li>"
-    next_focus_list = "".join(f"<li>{escape(str(line))}</li>" for line in diagnosis.get("next_focus", [])) or "<li>暂无</li>"
+    drill_list = _colored_list(diagnosis.get("recommended_drills", []), diagnosis.get("rule_based_recommended_drills", []))
+    next_focus_list = _colored_list(diagnosis.get("next_focus", []), diagnosis.get("rule_based_next_focus", []))
     top_problem_titles = "".join(
-        f"<span class='summary-chip'>{escape(str(problem.get('problem_title', '')))}</span>"
+        f"<span class='summary-chip {_source_class(problem.get('problem_title'), rule_problem_map.get(str(problem.get('task_id', '')).strip(), {}).get('problem_title'))}'>{escape(str(problem.get('problem_title', '')))}</span>"
         for problem in diagnosis.get("top_problems", [])[:3]
         if problem.get("problem_title")
     ) or "<span class='summary-chip'>暂无明显突出问题</span>"
@@ -450,10 +509,9 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     chart_src = _embed_image(module6_artifacts.get("chart_png"))
     trajectory_src = _embed_image(diagnosis.get("trajectory_image") or module6_artifacts.get("trajectory_png"))
     speed_src = _embed_image(diagnosis.get("speed_image"))
-    module5_summary_src = _embed_image(diagnosis.get("module5_summary_image"))
+    phase_timeline_src = _embed_image(diagnosis.get("phase_timeline_image")) or _embed_image(diagnosis.get("module5_summary_image"))
     module5_video_src = _embed_video(diagnosis.get("module5_video_path"))
     module6_report_srcdoc = _embed_html_document(diagnosis.get("score_report_html") or module6_artifacts.get("report_html"))
-    speed_card_title = "重心速度变化图" if speed_src else "模块五综合特征图（含重心速度）"
 
     score_card_media = _render_image_card("评分总览", chart_src) if chart_src else "<p>暂无评分图。</p>"
     module6_toggle = (
@@ -469,21 +527,22 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
         else "<p class='meta'>当前没有可用的完整评分报告。</p>"
     )
 
-    media_cards = "".join(
+    media_top_cards = "".join(
         [
-            _render_image_card("评分总览", chart_src),
             _render_image_card("重心轨迹图", trajectory_src),
-            _render_image_card(speed_card_title, speed_src or module5_summary_src),
+            _render_image_card("重心速度变化图", speed_src),
         ]
     )
+    phase_card = _render_image_card("阶段划分与关键事件定位", phase_timeline_src, "phase-card phase-row")
     media_section = (
         f"""
         <section class="card" style="margin-top: 20px;">
           <h2>图表与轨迹</h2>
-          <div class="media-grid">{media_cards}</div>
+          <div class="media-grid">{media_top_cards}</div>
+          {phase_card}
         </section>
         """
-        if media_cards
+        if media_top_cards or phase_card
         else ""
     )
 
@@ -513,11 +572,14 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
 
     metric_rows = []
     for item in diagnosis.get("technical_metrics_highlights", []):
+        key = str(item.get("key", ""))
+        if key and not _is_visible_metric_key(key):
+            continue
         value = item.get("value")
         if value is None:
             continue
         unit = str(item.get("unit", "")).strip()
-        value_text = _format_metric_value(str(item.get("key", "")), value)
+        value_text = _format_metric_value(key, value)
         if unit:
             value_text = f"{value_text} {unit}"
         metric_rows.append(
@@ -592,7 +654,8 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     """
 
     base_styles = """
-    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; margin: 28px; color: #1f2937; background: #f7f9fc; }
+    body { font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif; margin: 28px; color: #1f2937; background: #f7f9fc; }
+    button, input, textarea, select, table, th, td { font-family: inherit; }
     h1, h2, h3 { margin: 0 0 10px; }
     .hero, .card, .problem-card { background: #fff; border: 1px solid #d9e2ec; border-radius: 16px; padding: 20px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05); }
     .hero { margin-bottom: 20px; }
@@ -602,11 +665,17 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     .stack { display: grid; gap: 16px; }
     .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
     .summary-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-    .summary-chip { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: #f3f6fb; color: #334155; font-size: 14px; font-weight: 600; border: 1px solid #dbe5f0; }
+    .summary-chip { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: #f3f6fb; font-size: 14px; font-weight: 600; border: 1px solid #dbe5f0; }
+    .text-rule { color: #111827; }
+    .text-llm { color: #111827; }
     .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .media-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
+    .media-card.phase-card { padding: 8px; }
+    .media-card.phase-row { margin-top: 16px; }
+    .media-card.phase-card .media-title { margin-bottom: 6px; }
     .media-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #344054; }
     .media-card img, .media-card video { width: 100%; display: block; border-radius: 10px; }
+    .media-card.phase-card img { border-radius: 8px; }
     .shot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .shot-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
     .shot-card img { width: 100%; display: block; border-radius: 10px; }
@@ -648,7 +717,7 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
         <h1>{escape(diagnosis['sample_name'])} 动作诊断与训练建议</h1>
         <p class="meta">视频：{escape(str(diagnosis['source_video_name']))}</p>
         <div class="score">总评分：{overall_text}</div>
-        <p><strong>总体判断：</strong>{escape(diagnosis['overall_summary'])}</p>
+        <p><strong>总体判断：</strong>{_colored_text(diagnosis.get('overall_summary'), diagnosis.get('rule_based_overall_summary'))}</p>
         <p><strong>当前最弱阶段：</strong>{escape(str(weakest_stage.get('task_name', weakest_stage.get('stage_name', '暂无'))))}</p>
         <p><strong>当前重点：</strong></p>
         <div class="summary-chips">{top_problem_titles}</div>

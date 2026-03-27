@@ -144,6 +144,32 @@ def resolve_module5_summary_image(visualization_dir: Path, sample_name: str, vid
     return None
 
 
+def render_phase_timeline_crop(
+    summary_image_path: Path | None,
+    output_path: Path,
+) -> Path | None:
+    if summary_image_path is None or not summary_image_path.exists():
+        return None
+
+    image = cv2.imread(str(summary_image_path))
+    if image is None:
+        return None
+
+    height, width = image.shape[:2]
+    if height < 40 or width < 40:
+        return None
+
+    # 只保留总图底部的阶段划分条与关键事件定位，去掉上方综合图表与指标表。
+    top = max(0, int(round(height * 0.785)))
+    cropped = image[top:height, 0:width]
+    if cropped.size == 0:
+        return None
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(output_path), cropped)
+    return output_path
+
+
 def resolve_module5_video(video_dir: Path, sample_name: str, video_id: str) -> Path | None:
     for name in _candidate_names(sample_name, video_id):
         candidate = video_dir / f"{name}_fusion_result.mp4"

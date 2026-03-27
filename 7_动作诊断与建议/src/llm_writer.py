@@ -11,7 +11,7 @@ from typing import Any
 import requests
 
 
-DEFAULT_TIMEOUT = 60
+DEFAULT_TIMEOUT = 180
 DEFAULT_LLAMA_PYTHON = Path(__file__).resolve().parents[2] / ".venv_llama_cpp" / "bin" / "python"
 DEFAULT_LLAMA_MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
@@ -26,6 +26,29 @@ def _clean_json_text(text: str) -> str:
             lines = lines[:-1]
         text = "\n".join(lines).strip()
     return text
+
+
+def _fallback_overall_summary(diagnosis: dict[str, Any]) -> str:
+    weakest_stage = str((diagnosis.get("weakest_stage") or {}).get("stage_name", "")).strip()
+    score = (diagnosis.get("overall_score") or {}).get("score")
+    try:
+        numeric_score = float(score)
+    except (TypeError, ValueError):
+        numeric_score = None
+
+    if numeric_score is not None:
+        if numeric_score < 2.5:
+            base = "整体动作短板较明显，仍需继续打磨。"
+        elif numeric_score < 3.5:
+            base = "整体动作还有提升空间。"
+        else:
+            base = "整体动作基础较稳，还可继续优化细节。"
+    else:
+        base = "整体动作还有提升空间。"
+
+    if weakest_stage:
+        return f"{base[:-1]}，当前短板集中在{weakest_stage}。"
+    return base
 
 
 def _extract_text_from_response(payload: dict[str, Any]) -> str:
@@ -362,13 +385,18 @@ def enrich_diagnosis_with_llm(
         return enriched
 
     enriched["rule_based_overall_summary"] = diagnosis.get("overall_summary", "")
+    enriched["rule_based_stage_diagnosis"] = copy.deepcopy(diagnosis.get("stage_diagnosis", []))
     enriched["rule_based_top_problems"] = copy.deepcopy(diagnosis.get("top_problems", []))
     enriched["rule_based_recommended_drills"] = list(diagnosis.get("recommended_drills", []))
     enriched["rule_based_next_focus"] = list(diagnosis.get("next_focus", []))
 
+    original_overall_summary = str(diagnosis.get("overall_summary", "")).strip()
     overall_summary = llm_output.get("overall_summary")
     if isinstance(overall_summary, str) and overall_summary.strip():
-        enriched["overall_summary"] = overall_summary.strip()
+        rewritten_overall = overall_summary.strip()
+        if rewritten_overall == original_overall_summary:
+            rewritten_overall = _fallback_overall_summary(diagnosis)
+        enriched["overall_summary"] = rewritten_overall
 
     llm_problem_map: dict[str, dict[str, Any]] = {}
     for item in llm_output.get("top_problems", []):

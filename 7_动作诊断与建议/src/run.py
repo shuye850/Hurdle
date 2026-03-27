@@ -32,6 +32,7 @@ from media_utils import (
     load_frame_features,
     render_com_trajectory_image,
     render_com_velocity_image,
+    render_phase_timeline_crop,
     resolve_module5_summary_image,
     resolve_module5_video,
     resolve_video_path,
@@ -199,12 +200,17 @@ def main() -> None:
             sample_name=stem,
         )
         module5_summary_path = resolve_module5_summary_image(Path(args.module5_vis_dir), stem, video_id)
+        phase_timeline_path = render_phase_timeline_crop(
+            summary_image_path=module5_summary_path,
+            output_path=output_dirs["visualization"] / f"{stem}_phase_timeline.png",
+        )
         module5_video_path = resolve_module5_video(Path(args.fusion_video_dir), stem, video_id)
 
         diagnosis["screenshots"] = screenshots
         diagnosis["trajectory_image"] = str(trajectory_path) if trajectory_path is not None else ""
         diagnosis["speed_image"] = str(speed_path) if speed_path is not None else ""
         diagnosis["module5_summary_image"] = str(module5_summary_path) if module5_summary_path is not None else ""
+        diagnosis["phase_timeline_image"] = str(phase_timeline_path) if phase_timeline_path is not None else ""
         diagnosis["module5_video_path"] = str(module5_video_path) if module5_video_path is not None else ""
 
         render_html_report(diagnosis, output_dirs["reports"] / f"{stem}_advice.html")
@@ -221,6 +227,7 @@ def main() -> None:
         diagnosis_for_json["trajectory_image"] = ""
         diagnosis_for_json["speed_image"] = ""
         diagnosis_for_json["module5_summary_image"] = ""
+        diagnosis_for_json["phase_timeline_image"] = ""
         save_json(output_dirs["json"] / f"{stem}_diagnosis.json", diagnosis_for_json)
         diagnoses.append(diagnosis_for_json)
 
@@ -229,6 +236,8 @@ def main() -> None:
             cleanup_targets.append(trajectory_path)
         if speed_path is not None:
             cleanup_targets.append(speed_path)
+        if phase_timeline_path is not None:
+            cleanup_targets.append(phase_timeline_path)
         _cleanup_media_paths(cleanup_targets)
 
     summary_df = build_summary_frame(diagnoses)
