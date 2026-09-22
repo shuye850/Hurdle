@@ -17,6 +17,7 @@ DEFAULT_INPUT_DIR = PROJECT_ROOT / "input"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output"
 DEFAULT_STAGE_DIR = PROJECT_ROOT / "1_视频预处理" / "output"
 DEFAULT_PIPELINE_PYTHON = PROJECT_ROOT / ".venv_rtmpose" / "bin" / "python3.11"
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "pipeline_config.json"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".m4v"}
 
 MODULE_OUTPUT_DIRS = [
@@ -38,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, help="最终报告输出目录")
     parser.add_argument("--stage-dir", type=Path, default=DEFAULT_STAGE_DIR, help="模块一统一输入目录")
     parser.add_argument("--python", type=Path, default=DEFAULT_PIPELINE_PYTHON, help="流水线 Python 解释器")
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH, help="流水线配置文件路径")
     parser.add_argument("--no-clean", action="store_true", help="不清理已有中间输出")
     parser.add_argument("--enable-llm", action="store_true", help="模块七启用 llama.cpp 文案生成")
     parser.add_argument("--dry-run", action="store_true", help="只打印流程，不实际执行")
@@ -47,6 +49,12 @@ def parse_args() -> argparse.Namespace:
 def ensure_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def load_pipeline_config(path: Path) -> dict:
+    if not path.exists():
+        raise FileNotFoundError(f"配置文件不存在: {path}")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def build_subprocess_env() -> dict[str, str]:
@@ -77,12 +85,74 @@ def reset_output_dirs(clean: bool) -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
-def stage_input_videos(videos: Iterable[Path], stage_dir: Path) -> list[str]:
+def _resize_video_if_needed(
+    src: Path,
+    dst: Path,
+    *,
+    python_path: Path,
+    resize_cfg: dict,
+    dry_run: bool,
+) -> None:
+    if not resize_cfg.get("enabled", False):
+        shutil.copy2(src, dst)
+        return
+
+    command = [
+        str(python_path),
+        str(PROJECT_ROOT / "1_视频预处理" / "src" / "prepare_video.py"),
+        "--input",
+        str(src),
+        "--output",
+        str(dst),
+        "--max-width",
+        str(int(resize_cfg.get("max_width", 1280))),
+        "--max-height",
+        str(int(resize_cfg.get("max_height", 720))),
+    ]
+    if resize_cfg.get("keep_aspect_ratio", True):
+        command.append("--keep-aspect-ratio")
+    if resize_cfg.get("upscale", False):
+        command.append("--upscale")
+
+    printable = " ".join(command)
+    print(f"[预处理] {printable}")
+    if dry_run:
+        return
+
+    completed = subprocess.run(
+        command,
+        cwd=PROJECT_ROOT,
+        env=build_subprocess_env(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if completed.stdout:
+        print(completed.stdout.rstrip())
+    if completed.returncode != 0:
+        raise RuntimeError(f"视频预处理失败: {src.name}")
+
+
+def stage_input_videos(
+    videos: Iterable[Path],
+    stage_dir: Path,
+    *,
+    python_path: Path,
+    config: dict,
+    dry_run: bool,
+) -> list[str]:
     ensure_dir(stage_dir)
+    resize_cfg = dict(config.get("video_preprocess", {}))
     staged_stems: list[str] = []
     for src in videos:
         dst = stage_dir / src.name
-        shutil.copy2(src, dst)
+        _resize_video_if_needed(
+            src,
+            dst,
+            python_path=python_path,
+            resize_cfg=resize_cfg,
+            dry_run=dry_run,
+        )
         staged_stems.append(src.stem)
     return staged_stems
 
@@ -232,26 +302,50 @@ def collect_final_outputs(stems: Iterable[str], output_dir: Path) -> dict[str, l
 
 def main() -> None:
     args = parse_args()
-    python_path = str(args.python.expanduser())
+    python_path = args.python.expanduser()
     input_dir = args.input_dir.resolve()
     output_dir = args.output_dir.resolve()
     stage_dir = args.stage_dir.resolve()
+    config_path = args.config.resolve()
+    config = load_pipeline_config(config_path)
 
     videos = list_input_videos(input_dir)
     print(f"发现输入视频 {len(videos)} 个")
     for video in videos:
         print(f"  - {video.name}")
 
-    reset_output_dirs(clean=not args.no_clean)
-    staged_stems = stage_input_videos(videos, stage_dir)
+    # Dry-run must be read-only: it should describe the planned pipeline without
+    # deleting or recreating any existing module outputs.
+    if not args.dry_run:
+        reset_output_dirs(clean=not args.no_clean)
+    resize_cfg = dict(config.get("video_preprocess", {}))
+    if resize_cfg.get("enabled", False):
+        print(
+            "[配置] 预处理分辨率已启用: "
+            f"max_width={resize_cfg.get('max_width')} "
+            f"max_height={resize_cfg.get('max_height')} "
+            f"keep_aspect_ratio={resize_cfg.get('keep_aspect_ratio', True)} "
+            f"upscale={resize_cfg.get('upscale', False)}"
+        )
+    else:
+        print("[配置] 预处理分辨率未启用，输入视频将直接复制到模块一输出目录。")
+
+    staged_stems = stage_input_videos(
+        videos,
+        stage_dir,
+        python_path=python_path,
+        config=config,
+        dry_run=args.dry_run,
+    )
     ensure_dir(output_dir)
 
-    module2_cmd = [python_path, str(PROJECT_ROOT / "2_栏架识别" / "src" / "run.py")]
-    module3_cmd = [python_path, str(PROJECT_ROOT / "3_人体关键点_RTMPOSE" / "src" / "run.py")]
-    module4_cmd = [python_path, str(PROJECT_ROOT / "4_阶段划分" / "src" / "run.py")]
-    module5_cmd = [python_path, str(PROJECT_ROOT / "5_特征融合" / "run.py")]
-    module6_cmd = [python_path, str(PROJECT_ROOT / "6_技术评价与反馈" / "src" / "run.py")]
-    module7_cmd = [python_path, str(PROJECT_ROOT / "7_动作诊断与建议" / "src" / "run.py")]
+    python_exe = str(python_path)
+    module2_cmd = [python_exe, str(PROJECT_ROOT / "2_栏架识别" / "src" / "run.py")]
+    module3_cmd = [python_exe, str(PROJECT_ROOT / "3_人体关键点_RTMPOSE" / "src" / "run.py")]
+    module4_cmd = [python_exe, str(PROJECT_ROOT / "4_阶段划分" / "src" / "run.py")]
+    module5_cmd = [python_exe, str(PROJECT_ROOT / "5_特征融合" / "run.py")]
+    module6_cmd = [python_exe, str(PROJECT_ROOT / "6_技术评价与反馈" / "src" / "run.py")]
+    module7_cmd = [python_exe, str(PROJECT_ROOT / "7_动作诊断与建议" / "src" / "run.py")]
     if args.enable_llm:
         module7_cmd.extend(["--enable-llm", "--llm-backend", "llama_cpp"])
 

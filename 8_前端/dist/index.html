@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="上传跨栏视频，查看动作阶段、技术评分、问题诊断与训练建议。"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%2309121f'/%3E%3Cpath d='M12 43h40M18 43V25h28v18M14 25h36' stroke='%23b9f227' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <title>跨栏动作技术分析</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260922-close-live" />
+    <script src="/assets/app.js?v=20260922-close-live" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="跨栏动作技术分析首页">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 44 44" role="img">
+              <path d="M8 30h28M12 30V16h20v14M9 16h26" />
+            </svg>
+          </span>
+          <span>
+            <strong>跨栏动作技术分析</strong>
+            <small>运动生物力学分析平台</small>
+          </span>
+        </a>
+        <div class="header-instruments">
+          <span class="header-code">SYS / HURDLE-08</span>
+          <span class="header-mode">规则诊断</span>
+          <div class="system-state" id="systemState">
+            <span class="state-dot"></span>
+            <span>正在连接分析服务</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="sidebar">
+          <section class="upload-card">
+            <div class="panel-index"><span>01</span> SAMPLE INPUT</div>
+            <h1>样本视频</h1>
+            <p>建议画面完整包含运动员与栏架，视频时长控制在 10 秒以内。</p>
+
+            <label class="drop-zone" id="dropZone" for="videoInput">
+              <input
+                id="videoInput"
+                type="file"
+                accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.m4v"
+              />
+              <span class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5" /></svg>
+              </span>
+              <strong id="dropTitle">置入待测视频</strong>
+              <span id="dropHint">拖放或点击选择 · 最大 500 MB</span>
+            </label>
+
+            <div class="selected-file hidden" id="selectedFile">
+              <span class="file-badge">MP4</span>
+              <span class="file-meta">
+                <strong id="selectedName"></strong>
+                <small id="selectedSize"></small>
+              </span>
+              <button class="icon-button" id="clearFile" type="button" aria-label="移除所选视频">×</button>
+            </div>
+
+            <button class="primary-button" id="startButton" type="button" disabled>
+              <span>开始动作分析</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" /></svg>
+            </button>
+            <p class="upload-error hidden" id="uploadError" role="alert"></p>
+          </section>
+
+          <section class="history-section">
+            <div class="history-heading">
+              <div>
+                <div class="panel-index"><span>02</span> RUN ARCHIVE</div>
+                <h2>实验记录</h2>
+              </div>
+              <button class="text-button" id="refreshHistory" type="button">刷新</button>
+            </div>
+            <div class="history-list" id="historyList">
+              <div class="history-skeleton"></div>
+              <div class="history-skeleton short"></div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main-panel" id="mainPanel" aria-live="polite">
+          <div class="welcome-state" id="welcomeState">
+            <div class="workspace-heading">
+              <span>ANALYSIS WORKSPACE</span>
+              <strong>等待样本</strong>
+            </div>
+            <div class="welcome-core">
+              <div class="welcome-copy">
+                <span class="eyebrow">HURDLE KINEMATICS / SINGLE TRIAL</span>
+                <h2>单栏动作<br />分析实验台</h2>
+                <p>系统将视频转换为关键点时序数据，识别起跨、腾空和下栏阶段，并输出可复核的技术指标与评分。</p>
+              </div>
+              <div class="coordinate-panel" aria-hidden="true">
+                <span class="axis-y">Y</span><span class="axis-x">X</span>
+                <div class="trajectory-line"></div>
+                <div class="hurdle-marker"></div>
+                <span class="point p1"></span><span class="point p2"></span><span class="point p3"></span><span class="point p4"></span>
+              </div>
+            </div>
+            <dl class="method-specs">
+              <div><dt>输入类型</dt><dd>单栏视频</dd></div>
+              <div><dt>分析域</dt><dd>运动学</dd></div>
+              <div><dt>评分任务</dt><dd>18 项</dd></div>
+              <div><dt>诊断方式</dt><dd>规则引擎</dd></div>
+            </dl>
+            <ol class="pipeline-overview">
+              <li><span>M01</span><strong>目标检测</strong><small>栏架 / 人体关键点</small></li>
+              <li><span>M02</span><strong>时序分段</strong><small>起跨 / 腾空 / 下栏</small></li>
+              <li><span>M03</span><strong>特征计算</strong><small>运动学技术指标</small></li>
+              <li><span>M04</span><strong>评价输出</strong><small>评分 / 诊断 / 建议</small></li>
+            </ol>
+          </div>
+
+          <div class="job-view hidden" id="jobView">
+            <section class="job-header">
+              <div>
+                <div class="panel-index"><span>03</span> ANALYSIS RUN</div>
+                <div class="job-label">
+                  <span class="status-chip" id="jobStatusChip">等待中</span>
+                  <span id="jobTimestamp"></span>
+                </div>
+                <h2 id="jobFilename">视频分析</h2>
+                <p id="jobStageText">任务正在准备</p>
+              </div>
+              <div class="job-actions">
+                <button class="secondary-button" id="newAnalysisButton" type="button">新建分析</button>
+                <a class="secondary-button hidden" id="fullReportLink" target="_blank" rel="noopener">
+                  查看完整报告
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 13 13 7m-5 0h5v5M5 4h4M5 4v12h11v-5" /></svg>
+                </a>
+              </div>
+            </section>
+
+            <section class="progress-card" id="progressCard">
+              <div class="progress-topline">
+                <span id="progressLabel">正在准备分析环境</span>
+                <strong id="progressPercent">0%</strong>
+              </div>
+              <div class="progress-track"><span id="progressBar"></span></div>
+              <div class="stage-row" id="stageRow"></div>
+            </section>
+
+            <section class="live-preview hidden" id="previewCard">
+              <div class="live-preview-header">
+                <div>
+                  <strong>逐帧检测画面</strong>
+                  <span>栏架检测 + 人体姿态识别</span>
+                </div>
+                <span class="live-badge" id="previewBadge"><i></i> LIVE</span>
+              </div>
+              <div class="preview-grid" id="previewGrid">
+                <article class="preview-channel hidden" id="hurdlePreviewChannel">
+                  <div class="preview-channel-title"><span>YOLO</span><strong>栏架目标检测</strong></div>
+                  <div class="preview-stage"><img id="hurdlePreviewImage" alt="YOLO 栏架逐帧检测画面" /></div>
+                </article>
+                <article class="preview-channel hidden" id="posePreviewChannel">
+                  <div class="preview-channel-title"><span>RTMPOSE</span><strong>人体关键点与骨架</strong></div>
+                  <div class="preview-stage"><img id="posePreviewImage" alt="RTMPose 人体姿态逐帧识别画面" /></div>
+                </article>
+              </div>
+              <p id="previewHint">两路画面随各自模型的检测进度独立更新。</p>
+            </section>
+
+            <section class="error-card hidden" id="errorCard">
+              <strong>分析未完成</strong>
+              <p id="errorMessage"></p>
+              <a id="logLink" target="_blank" rel="noopener">查看运行日志</a>
+            </section>
+
+            <div class="results hidden" id="results">
+              <nav class="result-tabs" aria-label="分析结果分类">
+                <button class="tab active" data-tab="overview" type="button"><span>R01</span> 数据总览</button>
+                <button class="tab" data-tab="scores" type="button"><span>R02</span> 指标矩阵</button>
+                <button class="tab" data-tab="advice" type="button"><span>R03</span> 诊断建议</button>
+                <button class="tab" data-tab="files" type="button"><span>R04</span> 数据导出</button>
+              </nav>
+              <div id="resultContent"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="toast hidden" id="toast" role="status"></div>
+  </body>
+</html>

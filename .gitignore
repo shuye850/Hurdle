@@ -13,15 +13,25 @@ __pycache__/
 # Virtual environments
 .venv/
 .venv_rtmpose/
+.venv_llama_cpp/
+.venv_mlx/
 
 # Project outputs
 output/
 outputs/
 **/output/
 **/outputs/
+runtime/
 
 # Runtime caches
 6_技术评价与反馈/deployable_models/.tabpfn_cache/
+.matplotlib/
+.mplconfig_pipeline/
+**/.mplconfig/
+.Rhistory
 
 # Optional local artifacts
 *.log
+
+# Local samples and generated job data
+input/

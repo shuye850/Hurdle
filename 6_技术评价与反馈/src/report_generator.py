@@ -49,19 +49,23 @@ def render_html_report(payload: dict[str, Any], chart_path: Path, output_path: P
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escape(payload['sample_name'])} 技术评分报告</title>
   <style>
-    body {{ font-family: "Times New Roman", Times, "Songti SC", "Hiragino Mincho ProN", serif; margin: 32px; color: #1f2937; background: #f7f9fc; }}
-    h1, h2 {{ margin: 0 0 10px; }}
-    .hero, .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 18px; padding: 22px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05); }}
-    .hero {{ margin-bottom: 22px; }}
-    .grid {{ display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; margin-top: 20px; }}
-    .wide-card {{ background: white; border: 1px solid #d9e2ec; border-radius: 18px; padding: 22px; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05); margin-top: 20px; }}
-    .score {{ font-size: 40px; font-weight: 700; color: #14532d; }}
-    .meta {{ color: #475467; margin-top: 8px; }}
-    table {{ width: 100%; border-collapse: collapse; }}
-    th, td {{ padding: 10px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; vertical-align: top; }}
-    img {{ width: 100%; border-radius: 12px; display: block; }}
+    :root {{ --fg:#1f2328;--muted:#59636e;--subtle:#f6f8fa;--border:#d1d9e0;--green:#1f883d;--dark:#25292e;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }}
+    * {{ box-sizing: border-box; }}
+    body {{ max-width:1200px; margin:0 auto; padding:20px; color:var(--fg); background:#fff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; }}
+    h1,h2 {{ margin:0 0 10px; }} h1 {{ font-size:24px; }} h2 {{ font-size:16px; }}
+    .hero,.card,.wide-card {{ background:#fff; border:1px solid var(--border); border-radius:6px; overflow:hidden; }}
+    .hero {{ margin-bottom:16px; padding:18px 20px; border-left:4px solid var(--green); }}
+    .grid {{ display:grid; grid-template-columns:.8fr 1.2fr; gap:14px; }}
+    .card,.wide-card {{ padding:16px; }} .wide-card {{ margin-top:14px; }}
+    .score {{ margin-top:10px; color:var(--green); font:700 34px/1 var(--mono); }}
+    .meta {{ color:var(--muted); margin-top:6px; }}
+    table {{ width:100%; border-collapse:collapse; }}
+    th,td {{ padding:9px 10px; border-top:1px solid var(--border); text-align:left; font-size:12px; vertical-align:top; }}
+    th {{ color:var(--muted); background:var(--subtle); font:600 10px var(--mono); }} tbody tr:hover {{ background:var(--subtle); }}
+    img {{ width:100%; border:1px solid var(--border); border-radius:4px; display:block; }}
     @media (max-width: 960px) {{
       .grid {{ grid-template-columns: 1fr; }}
     }}

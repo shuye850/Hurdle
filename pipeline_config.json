@@ -1,0 +1,9 @@
+{
+  "video_preprocess": {
+    "enabled": true,
+    "max_width": 1280,
+    "max_height": 720,
+    "keep_aspect_ratio": true,
+    "upscale": false
+  }
+}

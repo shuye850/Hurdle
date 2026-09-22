@@ -10,7 +10,12 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 from io_video import get_module1_output_dir, list_video_files, ensure_dir
-from infer_pose import build_inferencer, infer_single_video
+from infer_pose import (
+    build_inferencer,
+    get_default_det_weights,
+    get_default_pose2d_weights,
+    infer_single_video,
+)
 from export_csv import export_pose_csv
 from visualize_pose import visualize_single_video
 
@@ -45,6 +50,7 @@ def debug_run_pose_module(
     pose2d: str | None = None,
     pose2d_weights: str | None = None,
     det_model: str = "rtmdet-l",
+    det_weights: str | None = None,
     det_cat_ids: list[int] | None = None,
     bbox_thr: float = 0.3,
     kpt_thr: float = 0.4,
@@ -72,6 +78,10 @@ def debug_run_pose_module(
     print(f"关键点方案: {schema_name}")
     print(f"检测模型: {det_model}")
     print(f"姿态模型: {pose2d if pose2d is not None else '(使用 schema 默认值)'}")
+    resolved_pose_weights = pose2d_weights or get_default_pose2d_weights()
+    resolved_det_weights = det_weights or get_default_det_weights()
+    print(f"姿态权重: {resolved_pose_weights if resolved_pose_weights else '(未指定本地权重，将使用框架默认行为)'}")
+    print(f"检测权重: {resolved_det_weights if resolved_det_weights else '(未指定本地权重，将使用框架默认行为)'}")
     print(f"设备: {device}")
     print(f"视频数量: {len(video_paths)}")
     print("=" * 60)
@@ -82,6 +92,7 @@ def debug_run_pose_module(
         pose2d=pose2d,
         pose2d_weights=pose2d_weights,
         det_model=det_model,
+        det_weights=det_weights,
         det_cat_ids=det_cat_ids,
     )
 
@@ -101,9 +112,12 @@ def debug_run_pose_module(
             pose2d=pose2d,
             pose2d_weights=pose2d_weights,
             det_model=det_model,
+            det_weights=det_weights,
             det_cat_ids=det_cat_ids,
             bbox_thr=bbox_thr,
             kpt_thr=kpt_thr,
+            preview_path=os.environ.get("PIPELINE_POSE_PREVIEW_PATH"),
+            preview_score_thr=vis_score_thr,
         )
 
         csv_path = output_dirs["csv_dir"] / f"{video_stem}_keypoints.csv"
@@ -146,6 +160,7 @@ def main():
         pose2d=None,
         pose2d_weights=None,
         det_model="rtmdet-l",
+        det_weights=None,
         det_cat_ids=[0],
         bbox_thr=0.3,
         kpt_thr=0.4,

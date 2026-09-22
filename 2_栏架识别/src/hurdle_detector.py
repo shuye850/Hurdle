@@ -13,7 +13,14 @@ VIDEO_EXTS = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'}
 
 
 class HurdleDetector:
-    def __init__(self, model_path, conf: float = 0.25, imgsz: int = 960, device=None):
+    def __init__(
+        self,
+        model_path,
+        conf: float = 0.25,
+        imgsz: int = 960,
+        device=None,
+        preview_path=None,
+    ):
         self.model_path = Path(model_path)
         if not self.model_path.exists():
             raise FileNotFoundError(f'未找到模型文件: {self.model_path}')
@@ -21,6 +28,30 @@ class HurdleDetector:
         self.conf = conf
         self.imgsz = imgsz
         self.device = device
+        self.preview_path = Path(preview_path) if preview_path else None
+
+    def _write_preview(self, frame, frame_idx: int, fps: float) -> None:
+        if self.preview_path is None:
+            return
+        preview = frame
+        max_width = 960
+        if preview.shape[1] > max_width:
+            scale = max_width / preview.shape[1]
+            preview = cv2.resize(
+                preview,
+                (max_width, max(1, int(preview.shape[0] * scale))),
+                interpolation=cv2.INTER_AREA,
+            )
+        label = f'YOLO HURDLE  |  FRAME {frame_idx + 1}  |  {frame_idx / fps:05.2f}s'
+        cv2.rectangle(preview, (0, 0), (preview.shape[1], 34), (31, 35, 40), -1)
+        cv2.putText(preview, label, (12, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (240, 246, 252), 1, cv2.LINE_AA)
+        ok, encoded = cv2.imencode('.jpg', preview, [cv2.IMWRITE_JPEG_QUALITY, 82])
+        if not ok:
+            return
+        self.preview_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.preview_path.with_suffix('.jpg.tmp')
+        temporary.write_bytes(encoded.tobytes())
+        temporary.replace(self.preview_path)
 
     def iter_videos(self, input_dir):
         input_dir = Path(input_dir)
@@ -98,6 +129,7 @@ class HurdleDetector:
 
                 vis = draw_hurdle_result(frame, bbox, bar_mid, post_x, conf, polygon=polygon)
                 writer.write(vis)
+                self._write_preview(vis, frame_idx, fps)
         finally:
             cap.release()
             writer.release()

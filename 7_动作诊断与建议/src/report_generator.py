@@ -516,12 +516,10 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     score_card_media = _render_image_card("评分总览", chart_src) if chart_src else "<p>暂无评分图。</p>"
     module6_toggle = (
         f"""
-        <div class="toggle-wrap">
-          <button class="toggle-btn" type="button" onclick="togglePanel('module6-report-panel', this, '展开完整评分报告', '收起完整评分报告')">展开完整评分报告</button>
-        </div>
-        <div id="module6-report-panel" class="toggle-panel">
+        <details class="details-block">
+          <summary>查看完整评分明细</summary>
           <iframe class="report-frame" loading="lazy" srcdoc="{module6_report_srcdoc}"></iframe>
-        </div>
+        </details>
         """
         if module6_report_srcdoc
         else "<p class='meta'>当前没有可用的完整评分报告。</p>"
@@ -602,152 +600,150 @@ def render_html_report(diagnosis: dict[str, Any], output_path: Path) -> Path:
     </section>
     """
 
-    detail_toolbar = """
-    <div class="toggle-row">
-      <button class="toggle-btn secondary small" type="button" onclick="togglePanel('diagnosis-panel', this, '展开问题诊断', '收起问题诊断')">展开问题诊断</button>
-      <button class="toggle-btn secondary small" type="button" onclick="togglePanel('advice-panel', this, '展开训练建议', '收起训练建议')">展开训练建议</button>
-      <button class="toggle-btn secondary small" type="button" onclick="togglePanel('metrics-panel', this, '展开指标信息', '收起指标信息')">展开指标信息</button>
-      <button class="toggle-btn secondary small" type="button" onclick="togglePanel('shots-panel', this, '展开关键截图', '收起关键截图')">展开关键截图</button>
-      <button class="toggle-btn secondary small" type="button" onclick="togglePanel('charts-panel', this, '展开图表轨迹', '收起图表轨迹')">展开图表轨迹</button>
-    </div>
-    """
-
     detail_sections = f"""
-    <section id="diagnosis-panel" class="toggle-panel">
-      <div class="grid" style="margin-top: 20px;">
+    <section id="diagnosis" class="report-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">01 / DIAGNOSIS</span><h2>分阶段诊断</h2></div>
+        <p>先确认主要短板，再查看具体证据和影响。</p>
+      </div>
+      <div class="grid">
         <div class="card">
-          <h2>分阶段诊断</h2>
+          <h3>阶段评分与结论</h3>
           <table>
             <thead><tr><th>阶段</th><th>得分</th><th>结论</th></tr></thead>
             <tbody>{stage_table_rows}</tbody>
           </table>
         </div>
         <div class="card">
-          <h2>下次训练重点</h2>
+          <h3>下次训练重点</h3>
           <ul>{next_focus_list}</ul>
         </div>
       </div>
-      <section class="stack" style="margin-top: 20px;">
+      <section class="stack">
         {problem_section}
       </section>
     </section>
 
-    <section id="advice-panel" class="toggle-panel">
-      <section class="card" style="margin-top: 20px;">
-        <h2>训练建议</h2>
+    <section id="advice" class="report-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">02 / TRAINING</span><h2>训练建议</h2></div>
+        <p>按优先级执行，下次测试时重点复核。</p>
+      </div>
+      <section class="card advice-summary">
         <ul>{drill_list}</ul>
       </section>
     </section>
 
-    <section id="metrics-panel" class="toggle-panel">
+    <section id="metrics" class="report-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">03 / METRICS</span><h2>技术指标</h2></div>
+        <p>关键数值默认显示，全部参数可按需展开。</p>
+      </div>
       {metric_section}
-      {full_metric_section}
+      <details class="details-block">
+        <summary>展开全部运动学指标</summary>
+        {full_metric_section}
+      </details>
     </section>
 
-    <section id="shots-panel" class="toggle-panel">
+    <section id="shots" class="report-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">04 / EVIDENCE</span><h2>关键帧证据</h2></div>
+        <p>对照起跨、过栏和下栏时刻检查动作。</p>
+      </div>
       {screenshot_section}
     </section>
 
-    <section id="charts-panel" class="toggle-panel">
+    <section id="charts" class="report-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">05 / CHARTS</span><h2>图表与轨迹</h2></div>
+        <p>用时序图检查重心、速度和阶段节奏。</p>
+      </div>
       {media_section}
     </section>
     """
 
     base_styles = """
-    body { font-family: "Times New Roman", "Songti SC", "STSong", "SimSun", serif; margin: 28px; color: #1f2937; background: #f7f9fc; }
-    button, input, textarea, select, table, th, td { font-family: inherit; }
-    h1, h2, h3 { margin: 0 0 10px; }
-    .hero, .card, .problem-card { background: #fff; border: 1px solid #d9e2ec; border-radius: 16px; padding: 20px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05); }
-    .hero { margin-bottom: 20px; }
-    .hero-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; align-items: start; }
-    .hero-copy p { max-width: 720px; }
-    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; margin-bottom: 20px; }
-    .stack { display: grid; gap: 16px; }
-    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-    .summary-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-    .summary-chip { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: #f3f6fb; font-size: 14px; font-weight: 600; border: 1px solid #dbe5f0; }
-    .text-rule { color: #111827; }
-    .text-llm { color: #111827; }
-    .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .media-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
-    .media-card.phase-card { padding: 8px; }
-    .media-card.phase-row { margin-top: 16px; }
-    .media-card.phase-card .media-title { margin-bottom: 6px; }
-    .media-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #344054; }
-    .media-card img, .media-card video { width: 100%; display: block; border-radius: 10px; }
-    .media-card.phase-card img { border-radius: 8px; }
-    .shot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .shot-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
-    .shot-card img { width: 100%; display: block; border-radius: 10px; }
-    .shot-meta { margin-top: 8px; font-size: 13px; color: #475467; }
-    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .metric-card { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; vertical-align: top; }
-    ul { margin: 8px 0 0 18px; }
-    p { margin: 8px 0; line-height: 1.65; }
-    .score { font-size: 34px; font-weight: 700; color: #1d4ed8; }
-    .meta { color: #475467; }
-    .summary-score-card { margin-top: 20px; background: #f8fafc; border: 1px solid #dbe5f0; border-radius: 14px; padding: 16px; }
-    .toggle-wrap { margin-top: 16px; }
-    .toggle-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-    .toggle-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 210px; padding: 12px 18px; border-radius: 999px; background: #1d4ed8; color: #fff; font-weight: 700; border: 1px solid #1d4ed8; cursor: pointer; box-shadow: 0 8px 16px rgba(29, 78, 216, 0.18); }
-    .toggle-btn.secondary { background: #e8eefc; color: #1d4ed8; border-color: #c7d7fe; box-shadow: none; }
-    .toggle-btn.small { min-width: 160px; padding: 10px 16px; }
-    .toggle-panel { display: none; margin-top: 18px; }
-    .toggle-panel.is-open { display: block; }
-    .report-frame { width: 100%; min-height: 1500px; border: 1px solid #d9e2ec; border-radius: 14px; background: #fff; }
-    @media (max-width: 960px) {
-      .hero-grid, .grid, .media-grid, .shot-grid, .metric-grid { grid-template-columns: 1fr; }
-      .section-head { display: block; }
-    }
+    :root { --fg:#1f2328; --muted:#59636e; --canvas:#fff; --subtle:#f6f8fa; --border:#d1d9e0; --blue:#0969da; --green:#1f883d; --orange:#9a6700; --dark:#25292e; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--subtle); }
+    body { margin:0; color:var(--fg); background:var(--subtle); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Helvetica,Arial,sans-serif; font-size:14px; line-height:1.55; }
+    h1,h2,h3,p { margin-top:0; } h1 { font-size:28px; line-height:1.25; letter-spacing:-.025em; } h2 { font-size:20px; } h3 { font-size:14px; }
+    .site-header { height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; color:#f0f6fc; background:var(--dark); border-bottom:1px solid #3d444d; }
+    .site-brand { display:flex; align-items:center; gap:10px; font-weight:600; }.site-mark { width:30px; height:30px; display:grid; place-items:center; border:1px solid #57606a; border-radius:6px; background:#151b23; font:700 12px var(--mono); }.site-state { color:#7ee787; font:11px var(--mono); }
+    .page-layout { width:min(1440px,100%); margin:auto; display:grid; grid-template-columns:235px minmax(0,1fr); gap:24px; padding:24px; }
+    .side-nav { position:sticky; top:24px; align-self:start; overflow:hidden; border:1px solid var(--border); border-radius:6px; background:var(--canvas); }
+    .side-nav-title { padding:14px 16px; border-bottom:1px solid var(--border); background:var(--subtle); font-weight:600; }.side-nav a { display:block; padding:9px 16px; color:var(--fg); border-left:3px solid transparent; text-decoration:none; font-size:12px; }.side-nav a:hover { color:var(--blue); border-left-color:var(--blue); background:var(--subtle); }.side-meta { margin:10px 16px 14px; padding-top:12px; color:var(--muted); border-top:1px solid var(--border); font:10px/1.6 var(--mono); }
+    .report-main { min-width:0; }.hero,.report-section { scroll-margin-top:20px; background:var(--canvas); border:1px solid var(--border); border-radius:6px; }.hero { overflow:hidden; }.hero-heading { padding:20px 22px; border-bottom:1px solid var(--border); }.meta { color:var(--muted); font-size:12px; }.summary-grid { display:grid; grid-template-columns:190px minmax(0,1fr); }.score-panel { padding:22px; color:#f0f6fc; background:var(--dark); }.score-label { color:#9198a1; font:10px var(--mono); }.score { margin:8px 0 16px; font:700 42px/1 var(--mono); }.score small { color:#9198a1; font-size:13px; }.weak-label { color:#b7bdc8; font-size:11px; }.weak-value { display:block; margin-top:4px; color:#fff; font-weight:600; }.summary-copy { padding:22px; }.summary-copy h2 { margin-bottom:8px; }.summary-copy p { margin-bottom:14px; }.summary-chips { display:flex; flex-wrap:wrap; gap:7px; }.summary-chip { display:inline-flex; padding:4px 9px; color:#82071e; border:1px solid #ff8182; border-radius:2em; background:#ffebe9; font-size:11px; font-weight:600; }
+    .report-section { margin-top:18px; padding:20px; }.section-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin:-20px -20px 18px; padding:16px 20px; border-bottom:1px solid var(--border); background:var(--subtle); }.section-heading h2 { margin:3px 0 0; }.section-heading p { max-width:430px; margin:0; color:var(--muted); text-align:right; font-size:11px; }.section-kicker { color:var(--blue); font:600 10px var(--mono); }
+    .grid { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr); gap:14px; }.stack { display:grid; gap:12px; margin-top:14px; }.card,.problem-card { padding:16px; border:1px solid var(--border); border-radius:6px; background:var(--canvas); }.problem-card { border-left:4px solid #fd8c73; }.problem-card h3 { margin-bottom:10px; }.problem-card strong { color:#343a40; }.problem-card ul,.advice-summary ul { padding-left:20px; }.problem-card li,.advice-summary li { margin:6px 0; }.advice-summary { border-left:4px solid var(--green); }
+    table { width:100%; border-collapse:collapse; }.card table { margin:0 -16px -16px; width:calc(100% + 32px); }.card h3+table { margin-top:12px; } th,td { padding:10px 12px; border-top:1px solid var(--border); text-align:left; vertical-align:top; font-size:12px; } th { color:var(--muted); background:var(--subtle); font:600 10px var(--mono); } tbody tr:hover { background:#f6f8fa; }
+    .media-grid,.shot-grid,.metric-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }.media-card,.shot-card,.metric-card { padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--subtle); }.media-card.phase-row { margin-top:12px; }.media-title { margin-bottom:7px; color:var(--muted); font:600 10px var(--mono); }.media-card img,.media-card video,.shot-card img { width:100%; display:block; border-radius:4px; }.shot-meta { margin-top:7px; color:var(--muted); font:10px var(--mono); }.metric-card h3 { margin:2px 2px 10px; }.metric-card table { background:#fff; }.text-rule,.text-llm { color:inherit; }
+    .summary-score-card { margin-top:16px; padding:14px; border:1px solid var(--border); border-radius:6px; background:var(--subtle); }.details-block { margin-top:14px; border:1px solid var(--border); border-radius:6px; background:#fff; }.details-block>summary { padding:11px 14px; color:var(--blue); background:var(--subtle); cursor:pointer; font-weight:600; }.details-block[open]>summary { border-bottom:1px solid var(--border); }.details-block .report-section,.details-block .card { margin:12px; }.report-frame { width:calc(100% - 24px); min-height:900px; margin:12px; border:1px solid var(--border); border-radius:4px; background:#fff; }
+    @media(max-width:900px){.page-layout{grid-template-columns:1fr;padding:12px}.side-nav{position:static}.side-nav a{display:inline-block;border-left:0;border-bottom:2px solid transparent}.side-nav a:hover{border-bottom-color:var(--blue)}.side-meta{display:none}.summary-grid,.grid,.media-grid,.shot-grid,.metric-grid{grid-template-columns:1fr}.section-heading{display:block}.section-heading p{margin-top:6px;text-align:left}.site-header{padding:0 14px}.site-state{display:none}}
+    @media print{.site-header,.side-nav{display:none}.page-layout{display:block;padding:0}.report-section,.hero{break-inside:avoid;border-color:#bbb}.details-block>div{display:block}}
     """
 
     html = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escape(diagnosis['sample_name'])} 动作诊断与训练建议</title>
   <style>{base_styles}</style>
 </head>
 <body>
-  <section class="hero">
-    <div class="hero-grid">
-      <div class="hero-copy">
+  <header class="site-header">
+    <div class="site-brand"><span class="site-mark">HR</span><span>跨栏动作技术分析</span></div>
+    <span class="site-state">RULE-BASED REPORT</span>
+  </header>
+  <div class="page-layout">
+    <aside class="side-nav" aria-label="报告目录">
+      <div class="side-nav-title">报告目录</div>
+      <a href="#summary">分析摘要</a>
+      <a href="#video">动作与评分</a>
+      <a href="#diagnosis">分阶段诊断</a>
+      <a href="#advice">训练建议</a>
+      <a href="#metrics">技术指标</a>
+      <a href="#shots">关键帧证据</a>
+      <a href="#charts">图表与轨迹</a>
+      <div class="side-meta">SYSTEM / HURDLE-08<br>MODE / NO LLM<br>SCALE / 0–5</div>
+    </aside>
+    <main class="report-main">
+      <section class="hero" id="summary">
+        <div class="hero-heading">
         <h1>{escape(diagnosis['sample_name'])} 动作诊断与训练建议</h1>
         <p class="meta">视频：{escape(str(diagnosis['source_video_name']))}</p>
-        <div class="score">总评分：{overall_text}</div>
-        <p><strong>总体判断：</strong>{_colored_text(diagnosis.get('overall_summary'), diagnosis.get('rule_based_overall_summary'))}</p>
-        <p><strong>当前最弱阶段：</strong>{escape(str(weakest_stage.get('task_name', weakest_stage.get('stage_name', '暂无'))))}</p>
-        <p><strong>当前重点：</strong></p>
-        <div class="summary-chips">{top_problem_titles}</div>
-        <div class="summary-score-card">
-          <h2>评分报告</h2>
-          {score_card_media}
-          {module6_toggle}
         </div>
-      </div>
-      <div>
-        {_render_video_card("动作视频", module5_video_src) if module5_video_src else "<div class='media-card'><div class='media-title'>动作视频</div><p>当前没有可用的视频文件。</p></div>"}
-      </div>
-    </div>
-  </section>
+        <div class="summary-grid">
+          <div class="score-panel">
+            <span class="score-label">OVERALL SCORE</span>
+            <div class="score">{overall_text.replace(' / 5', '<small> / 5</small>')}</div>
+            <span class="weak-label">优先改善<span class="weak-value">{escape(str(weakest_stage.get('task_name', weakest_stage.get('stage_name', '暂无'))))}</span></span>
+          </div>
+          <div class="summary-copy">
+            <h2>总体判断</h2>
+            <p>{_colored_text(diagnosis.get('overall_summary'), diagnosis.get('rule_based_overall_summary'))}</p>
+            <h3>当前重点</h3>
+            <div class="summary-chips">{top_problem_titles}</div>
+          </div>
+        </div>
+      </section>
 
-  <section class="card" style="margin-top: 20px;">
-    <h2>详细报告</h2>
-    <p class="meta">按内容分类展开查看问题诊断、训练建议、指标、截图和图表。</p>
-    {detail_toolbar}
-    {detail_sections}
-  </section>
+      <section class="report-section" id="video">
+        <div class="section-heading">
+          <div><span class="section-kicker">00 / OVERVIEW</span><h2>动作与评分</h2></div>
+          <p>视频用于复核动作，评分图用于快速定位薄弱项。</p>
+        </div>
+        <div class="media-grid">
+          {_render_video_card("动作视频", module5_video_src) if module5_video_src else "<div class='media-card'><div class='media-title'>动作视频</div><p>当前没有可用的视频文件。</p></div>"}
+          <div class="summary-score-card"><h3>评分总览</h3>{score_card_media}{module6_toggle}</div>
+        </div>
+      </section>
 
-  <script>
-    function togglePanel(id, button, expandLabel, collapseLabel) {{
-      const panel = document.getElementById(id);
-      if (!panel) return;
-      const isOpen = panel.classList.toggle('is-open');
-      button.textContent = isOpen ? collapseLabel : expandLabel;
-    }}
-  </script>
+      {detail_sections}
+    </main>
+  </div>
 </body>
 </html>
 """
